@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<process version="6.3.000">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="6.3.000" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="2001"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="retrieve" compatibility="6.3.000" expanded="true" height="60" name="Get Model" width="90" x="45" y="30">
+        <parameter key="repository_entry" value="trebino/svm_model"/>
+      </operator>
+      <operator activated="true" class="retrieve" compatibility="6.3.000" expanded="true" height="60" name="Get new obs" width="90" x="45" y="120">
+        <parameter key="repository_entry" value="trebino/rotten_tomatoes/reviews"/>
+      </operator>
+      <operator activated="true" class="retrieve" compatibility="6.3.000" expanded="true" height="60" name="Get word vec" width="90" x="45" y="210">
+        <parameter key="repository_entry" value="trebino/word_vector"/>
+      </operator>
+      <operator activated="true" class="text:process_document_from_data" compatibility="6.1.000" expanded="true" height="76" name="Process Documents from Data" width="90" x="179" y="120">
+        <parameter key="create_word_vector" value="true"/>
+        <parameter key="vector_creation" value="TF-IDF"/>
+        <parameter key="add_meta_information" value="true"/>
+        <parameter key="keep_text" value="false"/>
+        <parameter key="prune_method" value="none"/>
+        <parameter key="prune_below_percent" value="3.0"/>
+        <parameter key="prune_above_percent" value="30.0"/>
+        <parameter key="prune_below_rank" value="0.05"/>
+        <parameter key="prune_above_rank" value="0.95"/>
+        <parameter key="datamanagement" value="double_sparse_array"/>
+        <parameter key="select_attributes_and_weights" value="false"/>
+        <list key="specify_weights"/>
+        <process expanded="true">
+          <operator activated="true" class="text:tokenize" compatibility="6.1.000" expanded="true" height="60" name="Tokenize (2)" width="90" x="45" y="30">
+            <parameter key="mode" value="non letters"/>
+            <parameter key="characters" value=".:"/>
+            <parameter key="language" value="English"/>
+            <parameter key="max_token_length" value="3"/>
+          </operator>
+          <operator activated="true" class="text:filter_by_length" compatibility="6.1.000" expanded="true" height="60" name="Filter Tokens (2)" width="90" x="179" y="30">
+            <parameter key="min_chars" value="4"/>
+            <parameter key="max_chars" value="25"/>
+          </operator>
+          <operator activated="true" class="text:stem_porter" compatibility="6.1.000" expanded="true" height="60" name="Stem (2)" width="90" x="313" y="30"/>
+          <operator activated="true" class="text:filter_stopwords_english" compatibility="6.1.000" expanded="true" height="60" name="Filter Stopwords (2)" width="90" x="447" y="30"/>
+          <connect from_port="document" to_op="Tokenize (2)" to_port="document"/>
+          <connect from_op="Tokenize (2)" from_port="document" to_op="Filter Tokens (2)" to_port="document"/>
+          <connect from_op="Filter Tokens (2)" from_port="document" to_op="Stem (2)" to_port="document"/>
+          <connect from_op="Stem (2)" from_port="document" to_op="Filter Stopwords (2)" to_port="document"/>
+          <connect from_op="Filter Stopwords (2)" from_port="document" to_port="document 1"/>
+          <portSpacing port="source_document" spacing="0"/>
+          <portSpacing port="sink_document 1" spacing="0"/>
+          <portSpacing port="sink_document 2" spacing="0"/>
+        </process>
+      </operator>
+      <operator activated="true" class="apply_model" compatibility="6.3.000" expanded="true" height="76" name="Apply Model (2)" width="90" x="313" y="30">
+        <list key="application_parameters"/>
+        <parameter key="create_view" value="false"/>
+      </operator>
+      <operator activated="true" class="multiply" compatibility="6.3.000" expanded="true" height="94" name="Multiply" width="90" x="447" y="30"/>
+      <operator activated="true" class="performance" compatibility="6.3.000" expanded="true" height="76" name="Performance" width="90" x="581" y="30">
+        <parameter key="use_example_weights" value="true"/>
+      </operator>
+      <connect from_op="Get Model" from_port="output" to_op="Apply Model (2)" to_port="model"/>
+      <connect from_op="Get new obs" from_port="output" to_op="Process Documents from Data" to_port="example set"/>
+      <connect from_op="Get word vec" from_port="output" to_op="Process Documents from Data" to_port="word list"/>
+      <connect from_op="Process Documents from Data" from_port="example set" to_op="Apply Model (2)" to_port="unlabelled data"/>
+      <connect from_op="Apply Model (2)" from_port="labelled data" to_op="Multiply" to_port="input"/>
+      <connect from_op="Multiply" from_port="output 1" to_op="Performance" to_port="labelled data"/>
+      <connect from_op="Multiply" from_port="output 2" to_port="result 2"/>
+      <connect from_op="Performance" from_port="performance" to_port="result 1"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+      <portSpacing port="sink_result 2" spacing="0"/>
+      <portSpacing port="sink_result 3" spacing="0"/>
+    </process>
+  </operator>
+</process>
